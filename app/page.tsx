@@ -1,0 +1,258 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { MetricCard } from "@/components/metric-card";
+import { OperationalEfficiencyTab } from "@/components/tabs/operational-efficiency";
+import { DemografiTab } from "@/components/tabs/demografi";
+import { SegmentasiPerjalananTab } from "@/components/tabs/segmentasi-perjalanan";
+import { SegmentasiLoyaltasTab } from "@/components/tabs/segmentasi-loyaltas";
+import { KorelasiPerilakuTab } from "@/components/tabs/korelasi-perilaku";
+import { fetchAllData, checkApiHealth } from "@/lib/api";
+import { DashboardData } from "@/lib/types";
+import { Activity, AlertCircle, TrainIcon } from "lucide-react";
+
+export default function DashboardPage() {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [apiConnected, setApiConnected] = useState(false);
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      setError(null);
+
+      // Check API health
+      const isHealthy = await checkApiHealth();
+      setApiConnected(isHealthy);
+
+      // Fetch data
+      const result = await fetchAllData();
+      if (result) {
+        setData(result);
+      } else {
+        setError("Gagal memuat data. Pastikan API tersedia.");
+      }
+      setLoading(false);
+    };
+
+    loadData();
+  }, []);
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b bg-card sticky top-0 z-50 shadow-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-primary/10 p-2 rounded-lg">
+                <TrainIcon className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold">KCI Stasiun BNI City</h1>
+                <p className="text-sm text-muted-foreground">Behavior Analysis Dashboard</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              {apiConnected ? (
+                <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-1.5 rounded-full">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  Connected
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-3 py-1.5 rounded-full">
+                  <AlertCircle className="h-4 w-4" />
+                  Disconnected
+                </div>
+              )}
+              {data && (
+                <div className="text-sm text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
+                  {formatDate(data.tanggal)}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-6">
+        {error && (
+          <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              <p>{error}</p>
+            </div>
+          </div>
+        )}
+
+        {loading ? (
+          // Loading Skeleton
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Activity className="h-5 w-5 animate-pulse" />
+              <p className="text-muted-foreground">Memuat data...</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <Skeleton key={i} className="h-24" />
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Skeleton className="h-[350px]" />
+              <Skeleton className="h-[350px]" />
+            </div>
+          </div>
+        ) : data ? (
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="w-full justify-start mb-6 bg-muted/50 p-1">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="operational">1️⃣ Operational Efficiency</TabsTrigger>
+              <TabsTrigger value="demografi">2️⃣ Profil Demografi</TabsTrigger>
+              <TabsTrigger value="segmentasi">3️⃣ Segmentasi Perjalanan</TabsTrigger>
+              <TabsTrigger value="loyaltas">4️⃣ Segmentasi Loyaltas</TabsTrigger>
+              <TabsTrigger value="korelasi">5️⃣ Behavior Correlation</TabsTrigger>
+            </TabsList>
+
+            {/* Overview Tab */}
+            <TabsContent value="overview" className="space-y-6">
+              <div>
+                <h2 className="text-xl font-semibold mb-2">Overview - Semua Kategori</h2>
+                <p className="text-sm text-muted-foreground">Ringkasan metrik utama dari seluruh kategori analisis</p>
+              </div>
+
+              {/* Dashboard Summary Metrics */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <MetricCard
+                  label={data.dashboard_summary.total_transaksi.label}
+                  value={data.dashboard_summary.total_transaksi.nilai}
+                  delta={data.dashboard_summary.total_transaksi.delta}
+                  description={data.dashboard_summary.total_transaksi.deskripsi}
+                />
+                <MetricCard
+                  label={data.dashboard_summary.total_penumpang_unik.label}
+                  value={data.dashboard_summary.total_penumpang_unik.nilai}
+                  delta={data.dashboard_summary.total_penumpang_unik.delta}
+                  description={data.dashboard_summary.total_penumpang_unik.deskripsi}
+                />
+                <MetricCard
+                  label={data.dashboard_summary.high_loyalty_penumpang.label}
+                  value={data.dashboard_summary.high_loyalty_penumpang.nilai}
+                  delta={data.dashboard_summary.high_loyalty_penumpang.delta}
+                  description={data.dashboard_summary.high_loyalty_penumpang.deskripsi}
+                />
+                <MetricCard
+                  label={data.dashboard_summary.gate_tersibuk.label}
+                  value={data.dashboard_summary.gate_tersibuk.nilai}
+                  delta={data.dashboard_summary.gate_tersibuk.delta}
+                  description={data.dashboard_summary.gate_tersibuk.deskripsi}
+                />
+                <MetricCard
+                  label={data.dashboard_summary.morning_peak_traffic.label}
+                  value={data.dashboard_summary.morning_peak_traffic.nilai}
+                  delta={data.dashboard_summary.morning_peak_traffic.delta}
+                  description={data.dashboard_summary.morning_peak_traffic.deskripsi}
+                />
+                <MetricCard
+                  label={data.dashboard_summary.evening_peak_traffic.label}
+                  value={data.dashboard_summary.evening_peak_traffic.nilai}
+                  delta={data.dashboard_summary.evening_peak_traffic.delta}
+                  description={data.dashboard_summary.evening_peak_traffic.deskripsi}
+                />
+                <MetricCard
+                  label={data.dashboard_summary.rata_rata_usia.label}
+                  value={data.dashboard_summary.rata_rata_usia.nilai}
+                  delta={data.dashboard_summary.rata_rata_usia.delta}
+                  description={data.dashboard_summary.rata_rata_usia.deskripsi}
+                />
+                <MetricCard
+                  label={data.dashboard_summary.stasiun_asal_dominan.label}
+                  value={data.dashboard_summary.stasiun_asal_dominan.nilai}
+                  delta={data.dashboard_summary.stasiun_asal_dominan.delta}
+                  description={data.dashboard_summary.stasiun_asal_dominan.deskripsi}
+                />
+              </div>
+
+              {/* Nested Tabs for Categories */}
+              <Card>
+                <CardContent className="p-6">
+                  <Tabs value={activeTab === "overview" ? "efisiensi" : activeTab} onValueChange={(v) => {
+                    if (v === "efisiensi") setActiveTab("operational");
+                    else if (v === "demografi") setActiveTab("demografi");
+                    else if (v === "segmentasi") setActiveTab("segmentasi");
+                    else if (v === "loyaltas") setActiveTab("loyaltas");
+                    else if (v === "korelasi") setActiveTab("korelasi");
+                  }}>
+                    <TabsList className="w-full justify-start bg-muted/30 p-1">
+                      <TabsTrigger value="efisiensi">1️⃣ Operational Efficiency</TabsTrigger>
+                      <TabsTrigger value="demografi">2️⃣ Profil Demografi</TabsTrigger>
+                      <TabsTrigger value="segmentasi">3️⃣ Segmentasi Perjalanan</TabsTrigger>
+                      <TabsTrigger value="loyaltas">4️⃣ Segmentasi Loyaltas</TabsTrigger>
+                      <TabsTrigger value="korelasi">5️⃣ Behavior Correlation</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="efisiensi" className="mt-6">
+                      <OperationalEfficiencyTab data={data.data.efisiensi_operasional} />
+                    </TabsContent>
+                    <TabsContent value="demografi" className="mt-6">
+                      <DemografiTab data={data.data.demografi} />
+                    </TabsContent>
+                    <TabsContent value="segmentasi" className="mt-6">
+                      <SegmentasiPerjalananTab data={data.data.segmentasi_perjalanan} />
+                    </TabsContent>
+                    <TabsContent value="loyaltas" className="mt-6">
+                      <SegmentasiLoyaltasTab data={data.data.segmentasi_loyaltas} />
+                    </TabsContent>
+                    <TabsContent value="korelasi" className="mt-6">
+                      <KorelasiPerilakuTab data={data.data.korelasi_perilaku} />
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Individual Category Tabs */}
+            <TabsContent value="operational">
+              <OperationalEfficiencyTab data={data.data.efisiensi_operasional} />
+            </TabsContent>
+            <TabsContent value="demografi">
+              <DemografiTab data={data.data.demografi} />
+            </TabsContent>
+            <TabsContent value="segmentasi">
+              <SegmentasiPerjalananTab data={data.data.segmentasi_perjalanan} />
+            </TabsContent>
+            <TabsContent value="loyaltas">
+              <SegmentasiLoyaltasTab data={data.data.segmentasi_loyaltas} />
+            </TabsContent>
+            <TabsContent value="korelasi">
+              <KorelasiPerilakuTab data={data.data.korelasi_perilaku} />
+            </TabsContent>
+          </Tabs>
+        ) : null}
+
+        {/* Footer */}
+        <footer className="mt-12 py-6 border-t text-center text-sm text-muted-foreground">
+          <div className="flex items-center justify-center gap-2">
+            <TrainIcon className="h-4 w-4" />
+            <p>KCI Stasiun BNI City - Behavior Analysis Dashboard</p>
+          </div>
+          <p className="mt-1">Dibuat untuk analisis behavior penumpang guna mendukung keputusan investor</p>
+        </footer>
+      </main>
+    </div>
+  );
+}
