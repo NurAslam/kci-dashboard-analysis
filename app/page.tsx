@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MetricCard } from "@/components/metric-card";
 import { OperationalEfficiencyTab } from "@/components/tabs/operational-efficiency";
@@ -12,14 +11,18 @@ import { SegmentasiLoyaltasTab } from "@/components/tabs/segmentasi-loyaltas";
 import { KorelasiPerilakuTab } from "@/components/tabs/korelasi-perilaku";
 import { fetchAllData, checkApiHealth } from "@/lib/api";
 import { DashboardData } from "@/lib/types";
-import { Activity, AlertCircle, TrainIcon } from "lucide-react";
+import { Activity, AlertCircle, TrainIcon, Calendar } from "lucide-react";
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
+  const [nestedActiveTab, setNestedActiveTab] = useState("efisiensi");
   const [apiConnected, setApiConnected] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>(
+    new Date().toISOString().split('T')[0]
+  );
 
   useEffect(() => {
     const loadData = async () => {
@@ -31,7 +34,7 @@ export default function DashboardPage() {
       setApiConnected(isHealthy);
 
       // Fetch data
-      const result = await fetchAllData();
+      const result = await fetchAllData(selectedDate);
       if (result) {
         setData(result);
       } else {
@@ -41,7 +44,7 @@ export default function DashboardPage() {
     };
 
     loadData();
-  }, []);
+  }, [selectedDate]);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -79,11 +82,22 @@ export default function DashboardPage() {
                   Disconnected
                 </div>
               )}
-              {data && (
-                <div className="text-sm text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
-                  {formatDate(data.tanggal)}
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="bg-muted border border-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </label>
+                {data && (
+                  <div className="text-sm text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
+                    {formatDate(data.tanggal)}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -119,14 +133,7 @@ export default function DashboardPage() {
           </div>
         ) : data ? (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="w-full justify-start mb-6 bg-muted/50 p-1">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="operational">1️⃣ Operational Efficiency</TabsTrigger>
-              <TabsTrigger value="demografi">2️⃣ Profil Demografi</TabsTrigger>
-              <TabsTrigger value="segmentasi">3️⃣ Segmentasi Perjalanan</TabsTrigger>
-              <TabsTrigger value="loyaltas">4️⃣ Segmentasi Loyaltas</TabsTrigger>
-              <TabsTrigger value="korelasi">5️⃣ Behavior Correlation</TabsTrigger>
-            </TabsList>
+            
 
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-6">
@@ -188,70 +195,34 @@ export default function DashboardPage() {
               </div>
 
               {/* Nested Tabs for Categories */}
-              <Card>
-                <CardContent className="p-6">
-                  <Tabs value={activeTab === "overview" ? "efisiensi" : activeTab} onValueChange={(v) => {
-                    if (v === "efisiensi") setActiveTab("operational");
-                    else if (v === "demografi") setActiveTab("demografi");
-                    else if (v === "segmentasi") setActiveTab("segmentasi");
-                    else if (v === "loyaltas") setActiveTab("loyaltas");
-                    else if (v === "korelasi") setActiveTab("korelasi");
-                  }}>
-                    <TabsList className="w-full justify-start bg-muted/30 p-1">
-                      <TabsTrigger value="efisiensi">1️⃣ Operational Efficiency</TabsTrigger>
-                      <TabsTrigger value="demografi">2️⃣ Profil Demografi</TabsTrigger>
-                      <TabsTrigger value="segmentasi">3️⃣ Segmentasi Perjalanan</TabsTrigger>
-                      <TabsTrigger value="loyaltas">4️⃣ Segmentasi Loyaltas</TabsTrigger>
-                      <TabsTrigger value="korelasi">5️⃣ Behavior Correlation</TabsTrigger>
-                    </TabsList>
+              <Tabs value={nestedActiveTab} onValueChange={setNestedActiveTab}>
+                <TabsList className="w-full justify-start bg-muted/30 p-1">
+                  <TabsTrigger value="efisiensi">1️⃣ Operational Efficiency</TabsTrigger>
+                  <TabsTrigger value="demografi">2️⃣ Profil Demografi</TabsTrigger>
+                  <TabsTrigger value="segmentasi">3️⃣ Segmentasi Perjalanan</TabsTrigger>
+                  <TabsTrigger value="loyaltas">4️⃣ Segmentasi Loyaltas</TabsTrigger>
+                  <TabsTrigger value="korelasi">5️⃣ Behavior Correlation</TabsTrigger>
+                </TabsList>
 
-                    <TabsContent value="efisiensi" className="mt-6">
-                      <OperationalEfficiencyTab data={data.data.efisiensi_operasional} />
-                    </TabsContent>
-                    <TabsContent value="demografi" className="mt-6">
-                      <DemografiTab data={data.data.demografi} />
-                    </TabsContent>
-                    <TabsContent value="segmentasi" className="mt-6">
-                      <SegmentasiPerjalananTab data={data.data.segmentasi_perjalanan} />
-                    </TabsContent>
-                    <TabsContent value="loyaltas" className="mt-6">
-                      <SegmentasiLoyaltasTab data={data.data.segmentasi_loyaltas} />
-                    </TabsContent>
-                    <TabsContent value="korelasi" className="mt-6">
-                      <KorelasiPerilakuTab data={data.data.korelasi_perilaku} />
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Individual Category Tabs */}
-            <TabsContent value="operational">
-              <OperationalEfficiencyTab data={data.data.efisiensi_operasional} />
-            </TabsContent>
-            <TabsContent value="demografi">
-              <DemografiTab data={data.data.demografi} />
-            </TabsContent>
-            <TabsContent value="segmentasi">
-              <SegmentasiPerjalananTab data={data.data.segmentasi_perjalanan} />
-            </TabsContent>
-            <TabsContent value="loyaltas">
-              <SegmentasiLoyaltasTab data={data.data.segmentasi_loyaltas} />
-            </TabsContent>
-            <TabsContent value="korelasi">
-              <KorelasiPerilakuTab data={data.data.korelasi_perilaku} />
+                <TabsContent value="efisiensi" className="mt-6">
+                  <OperationalEfficiencyTab data={data.data.efisiensi_operasional} />
+                </TabsContent>
+                <TabsContent value="demografi" className="mt-6">
+                  <DemografiTab data={data.data.demografi} />
+                </TabsContent>
+                <TabsContent value="segmentasi" className="mt-6">
+                  <SegmentasiPerjalananTab data={data.data.segmentasi_perjalanan} />
+                </TabsContent>
+                <TabsContent value="loyaltas" className="mt-6">
+                  <SegmentasiLoyaltasTab data={data.data.segmentasi_loyaltas} />
+                </TabsContent>
+                <TabsContent value="korelasi" className="mt-6">
+                  <KorelasiPerilakuTab data={data.data.korelasi_perilaku} />
+                </TabsContent>
+              </Tabs>
             </TabsContent>
           </Tabs>
-        ) : null}
-
-        {/* Footer */}
-        <footer className="mt-12 py-6 border-t text-center text-sm text-muted-foreground">
-          <div className="flex items-center justify-center gap-2">
-            <TrainIcon className="h-4 w-4" />
-            <p>KCI Stasiun BNI City - Behavior Analysis Dashboard</p>
-          </div>
-          <p className="mt-1">Dibuat untuk analisis behavior penumpang guna mendukung keputusan investor</p>
-        </footer>
+        ) : null}    
       </main>
     </div>
   );

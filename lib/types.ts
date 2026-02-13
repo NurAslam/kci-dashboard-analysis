@@ -6,6 +6,24 @@ export interface DashboardData {
   data: DataContainer;
 }
 
+// New API Response wrapper
+export interface AnalyticsApiResponse {
+  statusCode: number;
+  message: string;
+  data: AnalyticsDataContainer;
+}
+
+export interface AnalyticsDataContainer {
+  externalData: DashboardData;
+  featureAnalysis: FeatureAnalysis;
+}
+
+export interface FeatureAnalysis {
+  occupied: number;
+  reserved: number;
+  available: number;
+}
+
 export interface DashboardSummary {
   total_transaksi: MetricValue;
   total_penumpang_unik: MetricValue;

@@ -1,10 +1,10 @@
 import { DashboardData } from "./types";
 
-const API_BASE_URL = "http://206.237.97.19:4003";
+const API_BASE_URL = "https://kci-service.urbansolv.co.id";
 
 export async function fetchAllData(date?: string): Promise<DashboardData | null> {
   try {
-    let url = `${API_BASE_URL}/api/v1/all-data`;
+    let url = `${API_BASE_URL}/api/v1/layer/analytics`;
     if (date) {
       url += `?date=${date}`;
     }
@@ -19,7 +19,9 @@ export async function fetchAllData(date?: string): Promise<DashboardData | null>
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const data: DashboardData = await response.json();
+    const json = await response.json();
+    // New API structure: data.externalData contains the actual data
+    const data: DashboardData = json.data.externalData;
     return data;
   } catch (error) {
     console.error("Error fetching data:", error);
