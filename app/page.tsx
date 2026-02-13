@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MetricCard } from "@/components/metric-card";
+import { FeatureAnalysisCard } from "@/components/feature-analysis-card";
 import { OperationalEfficiencyTab } from "@/components/tabs/operational-efficiency";
 import { DemografiTab } from "@/components/tabs/demografi";
 import { SegmentasiPerjalananTab } from "@/components/tabs/segmentasi-perjalanan";
@@ -15,6 +16,7 @@ import { Activity, AlertCircle, TrainIcon, Calendar } from "lucide-react";
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
+  const [featureAnalysis, setFeatureAnalysis] = useState<{ totalTenant: number; available: number; reserved: number; occupied: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
@@ -35,11 +37,13 @@ export default function DashboardPage() {
 
       // Fetch data
       const result = await fetchAllData(selectedDate);
-      if (result) {
-        setData(result);
+      if (result.data) {
+        setData(result.data);
+        setFeatureAnalysis(result.featureAnalysis);
       } else {
         setError("Gagal memuat data. Pastikan API tersedia.");
       }
+
       setLoading(false);
     };
 
@@ -142,25 +146,13 @@ export default function DashboardPage() {
                 <p className="text-sm text-muted-foreground">Ringkasan metrik utama dari seluruh kategori analisis</p>
               </div>
 
-              {/* Dashboard Summary Metrics */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <MetricCard
-                  label={data.dashboard_summary.total_transaksi.label}
-                  value={data.dashboard_summary.total_transaksi.nilai}
-                  delta={data.dashboard_summary.total_transaksi.delta}
-                  description={data.dashboard_summary.total_transaksi.deskripsi}
-                />
+              {/* Dashboard Summary Metrics - Reduced to 3 cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <MetricCard
                   label={data.dashboard_summary.total_penumpang_unik.label}
                   value={data.dashboard_summary.total_penumpang_unik.nilai}
                   delta={data.dashboard_summary.total_penumpang_unik.delta}
                   description={data.dashboard_summary.total_penumpang_unik.deskripsi}
-                />
-                <MetricCard
-                  label={data.dashboard_summary.high_loyalty_penumpang.label}
-                  value={data.dashboard_summary.high_loyalty_penumpang.nilai}
-                  delta={data.dashboard_summary.high_loyalty_penumpang.delta}
-                  description={data.dashboard_summary.high_loyalty_penumpang.deskripsi}
                 />
                 <MetricCard
                   label={data.dashboard_summary.gate_tersibuk.label}
@@ -169,30 +161,17 @@ export default function DashboardPage() {
                   description={data.dashboard_summary.gate_tersibuk.deskripsi}
                 />
                 <MetricCard
-                  label={data.dashboard_summary.morning_peak_traffic.label}
-                  value={data.dashboard_summary.morning_peak_traffic.nilai}
-                  delta={data.dashboard_summary.morning_peak_traffic.delta}
-                  description={data.dashboard_summary.morning_peak_traffic.deskripsi}
-                />
-                <MetricCard
-                  label={data.dashboard_summary.evening_peak_traffic.label}
-                  value={data.dashboard_summary.evening_peak_traffic.nilai}
-                  delta={data.dashboard_summary.evening_peak_traffic.delta}
-                  description={data.dashboard_summary.evening_peak_traffic.deskripsi}
-                />
-                <MetricCard
                   label={data.dashboard_summary.rata_rata_usia.label}
                   value={data.dashboard_summary.rata_rata_usia.nilai}
                   delta={data.dashboard_summary.rata_rata_usia.delta}
                   description={data.dashboard_summary.rata_rata_usia.deskripsi}
                 />
-                <MetricCard
-                  label={data.dashboard_summary.stasiun_asal_dominan.label}
-                  value={data.dashboard_summary.stasiun_asal_dominan.nilai}
-                  delta={data.dashboard_summary.stasiun_asal_dominan.delta}
-                  description={data.dashboard_summary.stasiun_asal_dominan.deskripsi}
-                />
               </div>
+
+              {/* Feature Analysis Card */}
+              {featureAnalysis && (
+                <FeatureAnalysisCard data={featureAnalysis} />
+              )}
 
               {/* Nested Tabs for Categories */}
               <Tabs value={nestedActiveTab} onValueChange={setNestedActiveTab}>

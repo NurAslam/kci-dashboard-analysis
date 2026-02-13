@@ -19,6 +19,7 @@ export interface AnalyticsDataContainer {
 }
 
 export interface FeatureAnalysis {
+  totalTenant: number;
   occupied: number;
   reserved: number;
   available: number;

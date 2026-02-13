@@ -1,8 +1,8 @@
-import { DashboardData } from "./types";
+import { DashboardData, FeatureAnalysis, AnalyticsApiResponse } from "./types";
 
 const API_BASE_URL = "https://kci-service.urbansolv.co.id";
 
-export async function fetchAllData(date?: string): Promise<DashboardData | null> {
+export async function fetchAllData(date?: string): Promise<{ data: DashboardData | null; featureAnalysis: FeatureAnalysis | null }> {
   try {
     let url = `${API_BASE_URL}/api/v1/layer/analytics`;
     if (date) {
@@ -19,13 +19,14 @@ export async function fetchAllData(date?: string): Promise<DashboardData | null>
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const json = await response.json();
-    // New API structure: data.externalData contains the actual data
-    const data: DashboardData = json.data.externalData;
-    return data;
+    const json: AnalyticsApiResponse = await response.json();
+    return {
+      data: json.data.externalData,
+      featureAnalysis: json.data.featureAnalysis,
+    };
   } catch (error) {
     console.error("Error fetching data:", error);
-    return null;
+    return { data: null, featureAnalysis: null };
   }
 }
 
